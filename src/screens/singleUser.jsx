@@ -6,30 +6,50 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  
 } from 'react-native';
 import React, {useRef, useState} from 'react';
 import {perticularUser} from '../components/Home';
 import BackgroundImage from '../components/ImageBackground';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
+import {url} from '../components/Home';
+import Toast from 'react-native-toast-message';
+import {useToast} from 'react-native-toast-notifications';
 
 const SingleUser = () => {
   const [userName, setUserName] = useState(perticularUser.name);
   const [userEmail, setUserEmail] = useState(perticularUser.email);
   const [userPhone, setUserPhone] = useState(perticularUser.phone);
-  const [userQualification, setUserQualification] = useState(
-    perticularUser.qualification,
-  );
+  const [userQualification, setUserQualification] = useState(perticularUser.qualification);
   const [userCity, setUserCity] = useState(perticularUser.city);
   const [userDOB, setUserDOB] = useState(perticularUser.dob);
   const [userGender, setUserGender] = useState(perticularUser.gender);
   var navigation = useNavigation();
   const [isUpdationOpen, setUpdationOpen] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
-  const handleNameRef = useRef(null)
-  const focusing = ()=> {
-    handleNameRef.current?.focus()
+  const handleNameRef = useRef(null);
+  
+  const focusing = () => {
+    handleNameRef.current?.focus();
+  };
+  const toastNotify = (e,t) => {
+    
+    Toast.show({
+      type: t,
+      text1: e,
+    });
+  
+}
+const toast = useToast();
+
+  const toastNot = (c,m)=>{
+    toast.show(c, {
+      type: m,
+      placement: "top",
+      duration: 2000,
+      offset: 30,
+      animationType: "slide-in",
+    });
   }
   const updatingData = async () => {
     let updatedData = {
@@ -39,22 +59,22 @@ const SingleUser = () => {
       phone: userPhone,
       city: userCity,
     };
-    let response = await axios.put('http://10.0.2.2:4100/update', updatedData);
+    let response = await axios.put(`${url}/update`, updatedData);
     if (response.data == 'data updated') {
+      toastNot('Data Updated','success')
       setTimeout(() => {
         navigation.navigate('User');
       }, 1000);
     }
   };
   const handleOnUpdate = () => {
-    // alert('data updated')
     if (isUpdationOpen == true) {
       updatingData();
       setIsUpdated(true);
       setUpdationOpen(false);
     } else {
       setUpdationOpen(true);
-      focusing()
+      focusing();
     }
   };
   const handleOnDelete = async () => {
@@ -63,26 +83,26 @@ const SingleUser = () => {
       setIsUpdated(false);
     } else {
       let id = perticularUser.userId;
-      let res = await axios.delete(`http://10.0.2.2:4100/delete/${id}`);
+      let res = await axios.delete(`${url}/delete/${id}`);
       if (res.data == 'deleted') {
+        toastNot('user deleted','success')
         setTimeout(() => {
           navigation.navigate('User');
         }, 1000);
       }
     }
-
-    // console.warn(perticularUser.userId)
   };
+  
   return (
-    // <BackgroundImage>
-    <View style={styles.bg}>
+    <>
+    <Toast />
+    <View style={[styles.bg]}>
+      
       <View style={styles.paddingBlock}>
         <View style={styles.propertyWraper}>
-          <Text style={styles.heading}>
-            Name : 
-          </Text>
+          <Text style={styles.heading}>Name :</Text>
           <Text style={[styles.data, isUpdationOpen && styles.dataHide]}>
-             {isUpdated == true ? userName : perticularUser.name}
+            {isUpdated == true ? userName : perticularUser.name}
           </Text>
           <TextInput
             placeholder="type here"
@@ -155,7 +175,6 @@ const SingleUser = () => {
           <Text style={[styles.data]}>{perticularUser.date}</Text>
         </View>
       </View>
-      {/* <Modal transparent={true}></Modal> */}
       <View
         style={{
           display: 'flex',
@@ -191,13 +210,8 @@ const SingleUser = () => {
           </Text>
         </TouchableOpacity>
       </View>
-      {/* <View style={[isUpdationOpen == true ? styles.showModal : styles.hideModal]}>
-        <Text>hello developer what going on</Text>
-      </View> */}
-      <Text>hre is the id {perticularUser.userId}</Text>
-      {/* <ActivityIndicator size={150} style={{position:"absolute"}}/> */}
     </View>
-    // </BackgroundImage>
+    </>
   );
 };
 let styles = StyleSheet.create({

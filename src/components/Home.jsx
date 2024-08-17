@@ -6,23 +6,27 @@ import {
   Alert,
   TouchableOpacity,
   TextInput,
-  SectionList,
   ScrollView,
   ActivityIndicator,
   Vibration,
+  Modal,
 } from 'react-native';
 import React, {useEffect, useLayoutEffect, useState} from 'react';
-import {transformer} from '../../metro.config';
 import axios from 'axios';
 import {Picker} from '@react-native-picker/picker';
 import {useNavigation} from '@react-navigation/native';
-import {Header} from 'react-native/Libraries/NewAppScreen';
 import DatePicker from 'react-native-date-picker';
 import BackgroundImage from './ImageBackground';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {dataChanged} from '../screens/singleUser';
-import { useToast } from "react-native-toast-notifications";
+import {useToast} from 'react-native-toast-notifications';
+import Toast from 'react-native-toast-message';
+// import { NetInfo } from "react-native";
+import NetInfo from '@react-native-community/netinfo';
+import {addEventListener} from '@react-native-community/netinfo';
 const image = {uri: 'https://wallpaperaccess.com/full/3348599.jpg'};
+export var url = 'https://crud-application-k1lr.vercel.app';
+// export var url = 'http://10.0.0.2:4100';
 export let perticularUser = {
   name: '',
   id: '',
@@ -58,13 +62,13 @@ export default function Home() {
   );
 }
 export const RegisterationScreen = () => {
-  const toast = useToast();
+  const [isConnected, setIsConnected] = useState(false);
+  
+  const [visibleModal, setVisibleModal] = useState(false);
   const [DOB, setDOB] = useState(new Date());
   const [open, setOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState();
   const navigation = useNavigation();
   const [isFocused, setisFocused] = useState('');
-  const [selectQualification, setSelectQualification] = useState('');
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userPhone, setUserPhone] = useState('');
@@ -72,12 +76,20 @@ export const RegisterationScreen = () => {
   const [userCity, setUserCity] = useState('');
   const [userDOB, setUserDOB] = useState('');
   const [userGender, setUserGender] = useState('');
-  const [showDeleteButton, setDeleteButton] = useState('');
   const [emailInvalid, setEmailInvalid] = useState(false);
-  // const [userName,setUserName] = useState('')
-  const handleonFocus = e => {
-    setisFocused(false);
-  };
+ 
+ 
+  const toast = useToast();
+
+  const toastNot = (c,m)=>{
+    toast.show(c, {
+      type: m,
+      placement: "top",
+      duration: 2000,
+      offset: 30,
+      animationType: "slide-in",
+    });
+  }
 
   const dobFocus = () => {
     setOpen(true);
@@ -93,15 +105,43 @@ export const RegisterationScreen = () => {
     gender: userGender,
   };
   const handleonSubmit = async () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(state.isConnected);
+      if (!state.isConnected) {
+        Alert.alert("No Internet Connection", "Please check your network settings.");
+      }
+    });
+    unsubscribe()
     if (userEmail.length <= 6) {
       setEmailInvalid(true);
-      // alert('please fill all the input field');
+      toastNot('invalid input', 'warning');
+      
+    }else if(isConnected == false){
+
     } else {
+      
+      setVisibleModal(true);
       try {
-        let res = await axios.post('http://10.0.2.2:4100/user', userData);
-        console.warn(res);
+        let res = await axios.post(`${url}/register-user`, userData);
+        if (res.data == 'submited') {
+          setVisibleModal(false);
+          Vibration.vibrate(500)
+          toastNot('Data submited', 'success');
+          setUserName('');
+          setUserEmail('');
+          setUserPhone('');
+          setUserCity('');
+          setUserQualification('qualification');
+          setUserGender('gender');
+        } else if (res.data == 'exists') {
+          setVisibleModal(false);
+          toastNot('Email is already Registered', 'warning');
+        } else {
+          setVisibleModal(false);
+          toastNot('network error', 'danger');
+        }
       } catch (err) {
-        console.warn(err, 'error found in url');
+        setVisibleModal(false);
       }
     }
   };
@@ -118,27 +158,36 @@ export const RegisterationScreen = () => {
 
   return (
     <>
+    
+      <Modal transparent={true} visible={visibleModal}>
+        <View
+          style={{
+            backgroundColor: 'rgba(100,100,100,0.7)',
+            height: '100%',
+            width: '100%',
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <View style={{height: 100, width: 100}}>
+            <ActivityIndicator size={150} color={'white'} />
+          </View>
+        </View>
+      </Modal>
       <BackgroundImage imageUrl={image}>
-        <ScrollView style={styles.registration.block}>
+      <Toast/>
+        <ScrollView style={[styles.registration.block,{zIndex:1}]}>
           <View style={styles.registration.parent}>
             <Text
               style={styles.registration.text}
-              onLongPress={() => Vibration.vibrate(100)}
-              onPress={()=> toast.show('hello world', {
-                type: "warning",
-                placement: "top",
-                duration: 2000,
-                offset: 1000,
-                animationType: "slide-in",
-              })}>
+              onLongPress={() => Vibration.vibrate(100)}>
               Registered
             </Text>
+
             <View style={styles.registration.inputParent}>
               <Text
                 style={[
                   styles.registration.blur,
-                  // isFocused != 'name' && styles.registration.labels,
-                  // userName.length == 0 ? styles.registration.labels : styles.registration.blur
                   isFocused != 'name'
                     ? styles.registration.labels
                     : styles.registration.blur,
@@ -152,6 +201,7 @@ export const RegisterationScreen = () => {
                 onBlur={() => setisFocused('')}
                 value={userName}
                 onChangeText={e => setUserName(e)}
+                autoFocus
               />
               <Text
                 style={[
@@ -184,18 +234,7 @@ export const RegisterationScreen = () => {
                 keyboardType="numeric"
                 onChangeText={e => setUserPhone(e)}
               />
-              {/* <Text
-                style={[
-                  styles.registration.blur,
-                  isFocused != 'qualification' && styles.registration.labels,
-                ]}>
-                Qualification
-              </Text> */}
-              {/* <TextInput
-                style={styles.registration.input}
-                onFocus={() => setisFocused('qualification')}
-                onBlur={() => setisFocused('')}
-              /> */}
+              
               <Text
                 style={[
                   styles.registration.blur,
@@ -213,7 +252,6 @@ export const RegisterationScreen = () => {
               <Text
                 style={[
                   styles.registration.blur,
-                  // isFocused != 'dob' && styles.registration.labels,
                 ]}>
                 DOB
               </Text>
@@ -284,8 +322,7 @@ export const RegisterationScreen = () => {
                 mode="date"
                 onConfirm={date => {
                   setOpen(false);
-                  setUserDOB(date);
-                  console.warn(date);
+                  setUserDOB(date.toLocaleDateString());
                 }}
                 onCancel={() => {
                   setOpen(false);
@@ -299,222 +336,14 @@ export const RegisterationScreen = () => {
   );
 };
 export const UsersList = () => {
+  const [isInternet,setInternet] = useState(false)
+  const [inputValue, setInputValue] = useState('');
+  const [userVisibleModal, setUserVisibleModal] = useState(false);
+  const [userListLoader,setUserListLoader] = useState(true)
   let navigation = useNavigation();
   const [usersData, setUsersData] = useState([]);
-  let userssData = [
-    {
-      name: 'aman',
-      email: 'aman@gmail.com',
-    },
-    {
-      name: 'chaman',
-      email: 'chaman@gmail.com',
-    },
-    {
-      name: 'vivek',
-      email: 'vivek@gmail.com',
-    },
-    {
-      name: 'osamabin',
-      email: 'osamabin@gmail.com',
-    },
-    {
-      name: 'akshay',
-      email: 'akshay@gmail.com',
-    },
-    {
-      name: 'ravi',
-      email: 'ravichaudhari@gmail.com',
-    },
-    {
-      name: 'jethalalG',
-      email: 'jethalalG@gmail.com',
-    },
-    {
-      name: 'bhideTukaram',
-      email: 'bhideTukaram@gmail.com',
-    },
-    {
-      name: 'tarak',
-      email: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      email: 'kumarkavi@gmail.com',
-    },
-    {
-      name: 'aman',
-      email: 'aman@gmail.com',
-    },
-    {
-      name: 'chaman',
-      email: 'chaman@gmail.com',
-    },
-    {
-      name: 'vivek',
-      email: 'vivek@gmail.com',
-    },
-    {
-      name: 'osamabin',
-      email: 'osamabin@gmail.com',
-    },
-    {
-      name: 'akshay',
-      email: 'akshay@gmail.com',
-    },
-    {
-      name: 'ravi',
-      email: 'ravichaudhari@gmail.com',
-    },
-    {
-      name: 'jethalalG',
-      email: 'jethalalG@gmail.com',
-    },
-    {
-      name: 'bhideTukaram',
-      email: 'bhideTukaram@gmail.com',
-    },
-    {
-      name: 'tarak',
-      email: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      email: 'kumarkavi@gmail.com',
-    },
-    {
-      name: 'aman',
-      email: 'aman@gmail.com',
-    },
-    {
-      name: 'chaman',
-      email: 'chaman@gmail.com',
-    },
-    {
-      name: 'vivek',
-      email: 'vivek@gmail.com',
-    },
-    {
-      name: 'osamabin',
-      email: 'osamabin@gmail.com',
-    },
-    {
-      name: 'akshay',
-      email: 'akshay@gmail.com',
-    },
-    {
-      name: 'ravi',
-      email: 'ravichaudhari@gmail.com',
-    },
-    {
-      name: 'jethalalG',
-      email: 'jethalalG@gmail.com',
-    },
-    {
-      name: 'bhideTukaram',
-      email: 'bhideTukaram@gmail.com',
-    },
-    {
-      name: 'tarak',
-      email: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      email: 'kumarkavi@gmail.com',
-    },
-    {
-      name: 'aman',
-      email: 'aman@gmail.com',
-    },
-    {
-      name: 'chaman',
-      mail: 'chaman@gmail.com',
-    },
-    {
-      name: 'vivek',
-      mail: 'vivek@gmail.com',
-    },
-    {
-      name: 'osamabin',
-      mail: 'osamabin@gmail.com',
-    },
-    {
-      name: 'akshay',
-      mail: 'akshay@gmail.com',
-    },
-    {
-      name: 'ravi',
-      mail: 'ravichaudhari@gmail.com',
-    },
-    {
-      name: 'jethalalG',
-      mail: 'jethalalG@gmail.com',
-    },
-    {
-      name: 'bhideTukaram',
-      mail: 'bhideTukaram@gmail.com',
-    },
-    {
-      name: 'tarak',
-      mail: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      mail: 'kumarkavi@gmail.com',
-    },
-    {
-      name: 'tarak',
-      mail: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      mail: 'kumarkavi@gmail.com',
-    },
-    {
-      name: 'aman',
-      mail: 'aman@gmail.com',
-    },
-    {
-      name: 'chaman',
-      mail: 'chaman@gmail.com',
-    },
-    {
-      name: 'vivek',
-      mail: 'vivek@gmail.com',
-    },
-    {
-      name: 'osamabin',
-      mail: 'osamabin@gmail.com',
-    },
-    {
-      name: 'akshay',
-      mail: 'akshay@gmail.com',
-    },
-    {
-      name: 'ravi',
-      mail: 'ravichaudhari@gmail.com',
-    },
-    {
-      name: 'jethalalG',
-      mail: 'jethalalG@gmail.com',
-    },
-    {
-      name: 'bhideTukaram',
-      mail: 'bhideTukaram@gmail.com',
-    },
-    {
-      name: 'tarak',
-      mail: 'tarakMehta@gmail.com',
-    },
-    {
-      name: 'kavi kumar',
-      mail: 'kumarkavi@gmail.com',
-    },
-  ];
   let s_no = 0;
-  const handleOnLongPress = item => {
-    console.warn(item.name);
-  };
+  
   const handleOnDetails = item => {
     perticularUser = {
       name: item.name,
@@ -530,21 +359,117 @@ export const UsersList = () => {
     navigation.navigate('singleUser');
   };
   const getApi = async () => {
+    setUserListLoader(true)
     try {
-      let res = await axios.post('http://10.0.2.2:4100');
+      let res = await axios.get(`${url}/users`);
       setUsersData(res.data);
-      // console.warn(res.data)
+      setUserListLoader(false)
+
     } catch (err) {
-      console.warn(err);
     }
   };
+
+  
   useEffect(() => {
     getApi();
-  }, [dataChanged]);
+  },[]);
+  const handleOnSearch = async () => {
+    let searchData = {data: inputValue};
+    setUserListLoader(true)
+    try {
+      let res = await axios.post(`${url}/search`, searchData);
+      setUserListLoader(false)
+      setUsersData(res.data);
+    } catch (err) {
+    }
+  };
+  const handleOnCross = () => {
+    setInputValue('');
+    setUserVisibleModal(true);
+    getApi();
+    setUserVisibleModal(false);
+  };
+  const handleOnLongPress=(item)=> {
+
+  }
+
   return (
     <BackgroundImage imageUrl={image}>
-      <View style={[styles.registration.block, {padding: 10}]}>
+      <Modal transparent={true} visible={userVisibleModal}>
+        <View
+          style={{
+            backgroundColor: 'rgba(100,100,100,0.7)',
+            height: '100%',
+            width: '100%',
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <View style={{height: 100, width: 100}}>
+            <ActivityIndicator size={100} color={'white'} />
+          </View>
+        </View>
+      </Modal>
+      <View style={[styles.registration.block, {padding: 10,paddingBottom:150}]}>
         <Text style={styles.registration.text}>UsersList</Text>
+        <View
+          style={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <TextInput
+              placeholder="search here"
+              value={inputValue}
+              onChangeText={e => setInputValue(e)}
+              style={{
+                borderWidth: 1,
+                borderColor: 'blue',
+                padding: 0,
+                width: 200,
+                borderTopLeftRadius: 5,
+                borderBottomLeftRadius: 5,
+                paddingLeft: 15,
+                borderRightWidth: 0,
+              }}
+            />
+            <Text
+              style={[
+                {
+                  paddingVertical: 4,
+                  paddingHorizontal: 10,
+                  borderTopWidth: 1,
+                  borderBottomWidth: 1,
+                  borderColor: 'blue',
+                },
+                inputValue.length == 0
+                  ? {color: 'transparent'}
+                  : {color: 'black'},
+              ]}
+              onPress={handleOnCross}>
+              X
+            </Text>
+          </View>
+
+          <TouchableOpacity onPress={handleOnSearch}>
+            <Text
+              style={[
+                {
+                  paddingVertical: 5,
+                  backgroundColor: 'blue',
+                  color: 'white',
+                  borderTopRightRadius: 5,
+                  borderBottomRightRadius: 5,
+                  paddingHorizontal: 15,
+                },
+              ]}>
+              Search
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text>total users :- {usersData?.length}</Text>
         <View>
           <View style={{display: 'flex', flexDirection: 'row', gap: 12}}>
             <Text style={[styles.userList.table, {marginRight: 10}]}>s.no</Text>
@@ -556,11 +481,26 @@ export const UsersList = () => {
             style={
               usersData.length == 0 ? styles.display : styles.blockDisplay
             }>
+            <Modal transparent={true} visible={userListLoader}>
+              <View
+                style={{
+                  backgroundColor: 'rgba(100,100,100,0.0)',
+                  height: '100%',
+                  width: '100%',
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <View style={{height: 100, width: 100}}>
+                  <ActivityIndicator size={100} color={'white'} />
+                </View>
+              </View>
+            </Modal>
             {usersData.map((item, i) => (
               <View key={item.email}>
                 <TouchableOpacity
                   onPress={() => handleOnDetails(item, i)}
-                  onLongPress={handleOnLongPress}
+                  onLongPress={()=> handleOnLongPress(item.email)}
                   key={i}>
                   <View style={styles.userList.tableContainer}>
                     <Text
@@ -578,10 +518,10 @@ export const UsersList = () => {
                     </Text>
                     {/* <Text>0108108108</Text> */}
                     <Text
-                      style={{width: '40%', overflow: 'hidden', height: 23}}>
+                      style={{width: '40%', overflow: 'hidden', height: 21}}>
                       {item.email}
                     </Text>
-                    <Text style={{position: 'absolute', right: 0}}>f</Text>
+                    {/* <Text style={{position: 'absolute', right: 0}}>f</Text> */}
                   </View>
                 </TouchableOpacity>
                 <View
@@ -594,6 +534,7 @@ export const UsersList = () => {
             ))}
           </ScrollView>
           <ActivityIndicator
+            visible={userListLoader}
             size={100}
             style={[
               usersData.length == 0 ? styles.blockDisplay : styles.display,
