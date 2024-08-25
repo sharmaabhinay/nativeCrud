@@ -10,23 +10,19 @@ import {
   ActivityIndicator,
   Vibration,
   Modal,
+  FlatList,
 } from 'react-native';
-import React, {useEffect, useLayoutEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import axios from 'axios';
 import {Picker} from '@react-native-picker/picker';
 import {useNavigation} from '@react-navigation/native';
 import DatePicker from 'react-native-date-picker';
 import BackgroundImage from './ImageBackground';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {dataChanged} from '../screens/singleUser';
 import {useToast} from 'react-native-toast-notifications';
 import Toast from 'react-native-toast-message';
-// import { NetInfo } from "react-native";
 import NetInfo from '@react-native-community/netinfo';
-import {addEventListener} from '@react-native-community/netinfo';
 const image = {uri: 'https://wallpaperaccess.com/full/3348599.jpg'};
 export var url = 'https://crud-application-k1lr.vercel.app';
-// export var url = 'http://10.0.0.2:4100';
 export let perticularUser = {
   name: '',
   id: '',
@@ -51,6 +47,7 @@ export default function Home() {
             <Button
               title="register"
               color="#1A5319"
+              
               onPress={() => navigation.navigate('Register')}></Button>
             <Button
               title="result"
@@ -63,7 +60,7 @@ export default function Home() {
 }
 export const RegisterationScreen = () => {
   const [isConnected, setIsConnected] = useState(false);
-  
+
   const [visibleModal, setVisibleModal] = useState(false);
   const [DOB, setDOB] = useState(new Date());
   const [open, setOpen] = useState(false);
@@ -77,19 +74,19 @@ export const RegisterationScreen = () => {
   const [userDOB, setUserDOB] = useState('');
   const [userGender, setUserGender] = useState('');
   const [emailInvalid, setEmailInvalid] = useState(false);
- 
- 
+  const [gender, setGender] = useState('');
+
   const toast = useToast();
 
-  const toastNot = (c,m)=>{
+  const toastNot = (c, m) => {
     toast.show(c, {
       type: m,
-      placement: "top",
+      placement: 'top',
       duration: 2000,
       offset: 30,
-      animationType: "slide-in",
+      animationType: 'slide-in',
     });
-  }
+  };
 
   const dobFocus = () => {
     setOpen(true);
@@ -105,27 +102,27 @@ export const RegisterationScreen = () => {
     gender: userGender,
   };
   const handleonSubmit = async () => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
+    const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
       if (!state.isConnected) {
-        Alert.alert("No Internet Connection", "Please check your network settings.");
+        Alert.alert(
+          'No Internet Connection',
+          'Please check your network settings.',
+        );
       }
     });
-    unsubscribe()
+    unsubscribe();
     if (userEmail.length <= 6) {
       setEmailInvalid(true);
       toastNot('invalid input', 'warning');
-      
-    }else if(isConnected == false){
-
+    } else if (isConnected == false) {
     } else {
-      
       setVisibleModal(true);
       try {
         let res = await axios.post(`${url}/register-user`, userData);
         if (res.data == 'submited') {
           setVisibleModal(false);
-          Vibration.vibrate(500)
+          Vibration.vibrate(500);
           toastNot('Data submited', 'success');
           setUserName('');
           setUserEmail('');
@@ -145,7 +142,6 @@ export const RegisterationScreen = () => {
       }
     }
   };
-  let dates = new Date();
   const handleonReset = () => {
     setUserName('');
     setUserEmail('');
@@ -155,10 +151,13 @@ export const RegisterationScreen = () => {
     setUserGender('gender');
     // setUserDOB(dates)
   };
+  const holdOnRegister = ()=> {
+    Vibration.vibrate(200)
+    alert('designed by @abhinay sharma')
+  }
 
   return (
     <>
-    
       <Modal transparent={true} visible={visibleModal}>
         <View
           style={{
@@ -175,12 +174,12 @@ export const RegisterationScreen = () => {
         </View>
       </Modal>
       <BackgroundImage imageUrl={image}>
-      <Toast/>
-        <ScrollView style={[styles.registration.block,{zIndex:1}]}>
+        <Toast />
+        <ScrollView style={[styles.registration.block, {zIndex: 1}]}>
           <View style={styles.registration.parent}>
             <Text
               style={styles.registration.text}
-              onLongPress={() => Vibration.vibrate(100)}>
+              onLongPress={holdOnRegister}>
               Registered
             </Text>
 
@@ -234,7 +233,7 @@ export const RegisterationScreen = () => {
                 keyboardType="numeric"
                 onChangeText={e => setUserPhone(e)}
               />
-              
+
               <Text
                 style={[
                   styles.registration.blur,
@@ -249,12 +248,7 @@ export const RegisterationScreen = () => {
                 value={userCity}
                 onChangeText={e => setUserCity(e)}
               />
-              <Text
-                style={[
-                  styles.registration.blur,
-                ]}>
-                DOB
-              </Text>
+              <Text style={[styles.registration.blur]}>DOB</Text>
               <TextInput
                 placeholder="tarik"
                 onFocus={dobFocus}
@@ -279,22 +273,70 @@ export const RegisterationScreen = () => {
                   height: 2,
                   width: 'full',
                 }}></View>
-              <Picker
-                selectedValue={userGender}
-                onValueChange={(itemValue, itemIndex) =>
-                  setUserGender(itemValue)
-                }>
-                <Picker.Item label="Gender" value="" />
-                <Picker.Item label="male" value="male" />
-                <Picker.Item label="female" value="female" />
-                <Picker.Item label="other" value="other" />
-              </Picker>
               <View
                 style={{
-                  backgroundColor: 'green',
-                  height: 2,
-                  width: 'full',
-                }}></View>
+                  flex: 1,
+                  flexDirection: 'row',
+                  gap: 20,
+                  marginLeft: 20,
+                  marginVertical: 20,
+                }}>
+                <TouchableOpacity
+                  onPress={() => setGender('male')}
+                  style={{
+                    display: 'felx',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}>
+                  <View
+                    style={{
+                      height: 15,
+                      width: 15,
+                      padding: 1.5,
+                      borderRadius: 100,
+                      borderWidth: 1,
+                      borderColor: 'black',
+                    }}>
+                    <View
+                      style={[
+                        {height: '100%', width: '100%'},
+                        gender == 'male'
+                          ? {backgroundColor: 'blue', borderRadius: 100}
+                          : null,
+                      ]}></View>
+                  </View>
+                  <Text>male</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setGender('female')}
+                  style={{
+                    display: 'felx',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}>
+                  <View
+                    style={{
+                      height: 15,
+                      width: 15,
+                      padding: 1.5,
+                      borderRadius: 100,
+                      borderWidth: 1,
+                      borderColor: 'black',
+                    }}>
+                    <View
+                      style={[
+                        {height: '100%', width: '100%'},
+                        gender == 'female'
+                          ? {backgroundColor: 'blue', borderRadius: 100}
+                          : null,
+                      ]}></View>
+                  </View>
+                  <Text>female</Text>
+                </TouchableOpacity>
+              </View>
+              
 
               <View
                 style={{
@@ -336,14 +378,14 @@ export const RegisterationScreen = () => {
   );
 };
 export const UsersList = () => {
-  const [isInternet,setInternet] = useState(false)
+  const [isInternet, setInternet] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [userVisibleModal, setUserVisibleModal] = useState(false);
-  const [userListLoader,setUserListLoader] = useState(true)
+  const [userListLoader, setUserListLoader] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   let navigation = useNavigation();
   const [usersData, setUsersData] = useState([]);
-  let s_no = 0;
-  
+  var sr_no = 0;
   const handleOnDetails = item => {
     perticularUser = {
       name: item.name,
@@ -359,29 +401,34 @@ export const UsersList = () => {
     navigation.navigate('singleUser');
   };
   const getApi = async () => {
-    setUserListLoader(true)
+    setUserListLoader(true);
     try {
       let res = await axios.get(`${url}/users`);
+      setUserListLoader(false);
       setUsersData(res.data);
-      setUserListLoader(false)
-
-    } catch (err) {
-    }
+    } catch (err) {}
+  };
+  const refreshApi = async () => {
+    setRefreshing(true);
+    try {
+      let res = await axios.get(`${url}/users`);
+      setRefreshing(false);
+      setUsersData(res.data);
+      // setUserListLoader(false);
+    } catch (err) {}
   };
 
-  
   useEffect(() => {
     getApi();
-  },[]);
+  }, []);
   const handleOnSearch = async () => {
     let searchData = {data: inputValue};
-    setUserListLoader(true)
+    setUserListLoader(true);
     try {
       let res = await axios.post(`${url}/search`, searchData);
-      setUserListLoader(false)
+      setUserListLoader(false);
       setUsersData(res.data);
-    } catch (err) {
-    }
+    } catch (err) {}
   };
   const handleOnCross = () => {
     setInputValue('');
@@ -389,29 +436,17 @@ export const UsersList = () => {
     getApi();
     setUserVisibleModal(false);
   };
-  const handleOnLongPress=(item)=> {
-
-  }
+  const handleOnLongPress = item => {
+    Vibration.vibrate(100)
+    Alert.alert('designed by @abhinay sharma')
+  };
 
   return (
     <BackgroundImage imageUrl={image}>
-      <Modal transparent={true} visible={userVisibleModal}>
-        <View
-          style={{
-            backgroundColor: 'rgba(100,100,100,0.7)',
-            height: '100%',
-            width: '100%',
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <View style={{height: 100, width: 100}}>
-            <ActivityIndicator size={100} color={'white'} />
-          </View>
-        </View>
-      </Modal>
-      <View style={[styles.registration.block, {padding: 10,paddingBottom:150}]}>
-        <Text style={styles.registration.text}>UsersList</Text>
+      <View
+        style={[styles.registration.block, {padding: 10, paddingBottom: 150}]}>
+        
+        <Text style={styles.registration.text} onPress={handleOnLongPress}>UsersList</Text>
         <View
           style={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
           <View
@@ -453,7 +488,7 @@ export const UsersList = () => {
             </Text>
           </View>
 
-          <TouchableOpacity onPress={handleOnSearch}>
+          <TouchableOpacity>
             <Text
               style={[
                 {
@@ -477,30 +512,31 @@ export const UsersList = () => {
             {/* <Text style={styles.userList.table}>Phone</Text> */}
             <Text style={[styles.userList.table, {flexGrow: 2}]}>Email</Text>
           </View>
-          <ScrollView
-            style={
-              usersData.length == 0 ? styles.display : styles.blockDisplay
-            }>
-            <Modal transparent={true} visible={userListLoader}>
-              <View
-                style={{
-                  backgroundColor: 'rgba(100,100,100,0.0)',
-                  height: '100%',
-                  width: '100%',
-                  flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}>
-                <View style={{height: 100, width: 100}}>
-                  <ActivityIndicator size={100} color={'white'} />
-                </View>
+          
+          <Modal transparent={true} visible={userListLoader}>
+            <View
+              style={{
+                backgroundColor: 'rgba(100,100,100,0.0)',
+                height: '100%',
+                width: '100%',
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <View style={{height: 100, width: 100}}>
+                <ActivityIndicator size={100} color={'white'} />
               </View>
-            </Modal>
-            {usersData.map((item, i) => (
+            </View>
+          </Modal>
+          <FlatList
+            onRefresh={refreshApi}
+            refreshing={refreshing}
+            data={usersData}
+            renderItem={({item, i}) => (
               <View key={item.email}>
                 <TouchableOpacity
                   onPress={() => handleOnDetails(item, i)}
-                  onLongPress={()=> handleOnLongPress(item.email)}
+                  onLongPress={() => handleOnLongPress(item.email)}
                   key={i}>
                   <View style={styles.userList.tableContainer}>
                     <Text
@@ -510,7 +546,7 @@ export const UsersList = () => {
                         height: 27,
                         width: 25,
                       }}>
-                      {(s_no += 1)}
+                      {(sr_no += 1)}
                     </Text>
                     <Text
                       style={{width: '40%', overflow: 'hidden', height: 23}}>
@@ -519,7 +555,7 @@ export const UsersList = () => {
                     {/* <Text>0108108108</Text> */}
                     <Text
                       style={{width: '40%', overflow: 'hidden', height: 21}}>
-                      {item.email}
+                      {item.email.length >= 15 ? `${item.email.substring(0,14)}...` : item.email}
                     </Text>
                     {/* <Text style={{position: 'absolute', right: 0}}>f</Text> */}
                   </View>
@@ -531,16 +567,9 @@ export const UsersList = () => {
                     backgroundColor: 'green',
                   }}></View>
               </View>
-            ))}
-          </ScrollView>
-          <ActivityIndicator
-            visible={userListLoader}
-            size={100}
-            style={[
-              usersData.length == 0 ? styles.blockDisplay : styles.display,
-              styles.indicator,
-            ]}
+            )}
           />
+          
         </View>
       </View>
     </BackgroundImage>
